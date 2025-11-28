@@ -1,11 +1,10 @@
 <template>
   <nav class="nav-bar" :class="{ scrolled }">
     <div class="logo">PANTHER</div>
-    <ul>
+    <ul class="nav-links">
       <li><router-link to="/">HOME</router-link></li>
-      <li><a href="#metrics">PERFORMANCE</a></li>
-      <li><a href="#products">PRODUCTS</a></li>
-      <li><a href="#contact">CONTACT</a></li>
+      <li><router-link to="/orders">ORDERS</router-link></li>
+      <li><router-link to="/account">ACCOUNT</router-link></li>
       <li><router-link to="/cart">CART</router-link></li>
     </ul>
   </nav>
@@ -43,32 +42,68 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   box-shadow: 0 2px 24px 0 rgba(255,215,0,0.10);
   background: rgba(10,10,10,0.97);
 }
+
 .logo {
-  font-size: 1.2rem;
+  font-size: clamp(0.9rem, 3vw, 1.2rem);
   color: var(--primary-gold);
   text-transform: uppercase;
   animation: glow 3s infinite;
 }
 
-ul {
+.nav-links {
   display: flex;
-  gap: 2rem;
+  gap: clamp(0.5rem, 2vw, 2rem);
   list-style: none;
+  flex-wrap: nowrap;
 }
-li {
-  font-size: 0.8rem;
+
+.nav-links li {
+  font-size: clamp(0.55rem, 1.8vw, 0.8rem);
+  white-space: nowrap;
 }
+
 a, .router-link-active {
   color: #bbb;
   text-decoration: none;
   text-transform: uppercase;
   position: relative;
   font-weight: 700;
-  letter-spacing: 1px;
+  letter-spacing: clamp(0.5px, 0.5vw, 1px);
   transition: color 0.2s;
 }
+
 a:hover, .router-link-active {
   color: var(--primary-gold);
   text-shadow: 0 0 6px rgba(255,215,0,0.3);
+}
+
+/* Mobile optimization */
+@media (max-width: 480px) {
+  .nav-bar {
+    padding: 1rem 1rem;
+  }
+  
+  .logo {
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+  }
+  
+  .nav-links {
+    gap: 0.4rem;
+  }
+  
+  .nav-links li {
+    font-size: 0.55rem;
+  }
+  
+  a, .router-link-active {
+    letter-spacing: 0.3px;
+  }
+}
+
+@media (max-width: 360px) {
+  .nav-links li {
+    font-size: 0.5rem;
+  }
 }
 </style>

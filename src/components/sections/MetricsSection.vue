@@ -33,7 +33,18 @@ function animateMetrics() {
     }, 24)
   })
 }
-onMounted(() => animateMetrics())
+onMounted(() => {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        animateMetrics()
+        observer.unobserve(entry.target)
+      }
+    })
+  })
+  const section = document.querySelector('.metrics')
+  if (section) observer.observe(section)
+})
 </script>
 
 <style scoped>
@@ -47,18 +58,24 @@ onMounted(() => animateMetrics())
   background: linear-gradient(180deg, #0a0a0a 0%, #121212 100%);
   position: relative;
 }
+
 .metrics-title {
   font-size: clamp(2rem, 6vw, 3.5rem);
   margin-bottom: 3rem;
   text-shadow: 0 0 20px rgba(255,215,0,0.18);
   letter-spacing: -1px;
+  text-align: center;
 }
+
 .metrics-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px,1fr));
-  gap: 2rem;
-  max-width: 600px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+  max-width: 700px;
+  width: 100%;
+  padding: 0 1rem;
 }
+
 .metric-card {
   text-align: center;
   padding: 2rem 1rem;
@@ -68,16 +85,72 @@ onMounted(() => animateMetrics())
   animation: float 3s ease-in-out infinite;
   transition: background 0.4s;
 }
+
 .metric-value {
-  font-size: clamp(2rem, 5vw, 3rem);
+  font-size: clamp(1.8rem, 4vw, 3rem);
   font-weight: 900;
   color: var(--primary-gold);
+  display: block;
+  margin-bottom: 0.5rem;
 }
+
 .metric-label {
-  font-size: 0.7rem;
+  font-size: clamp(0.6rem, 1.5vw, 0.7rem);
   text-transform: uppercase;
   color: #999;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
   font-weight: 600;
+  display: block;
+}
+
+.metric-card:hover {
+  background: rgba(255,215,0,0.08);
+  border-color: rgba(255,215,0,0.4);
+}
+
+/* CRITICAL: Mobile 2×2 grid */
+@media (max-width: 768px) {
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    max-width: 400px;
+  }
+  
+  .metric-card {
+    padding: 1.5rem 0.75rem;
+  }
+  
+  .metric-value {
+    font-size: 2rem;
+  }
+  
+  .metric-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.3px;
+  }
+}
+
+@media (max-width: 480px) {
+  .metrics {
+    padding: 3rem 0.5rem 2rem 0.5rem;
+  }
+  
+  .metrics-grid {
+    gap: 0.75rem;
+    max-width: 100%;
+    padding: 0 0.5rem;
+  }
+  
+  .metric-card {
+    padding: 1.2rem 0.5rem;
+  }
+  
+  .metric-value {
+    font-size: 1.6rem;
+  }
+  
+  .metric-label {
+    font-size: 0.55rem;
+  }
 }
 </style>
