@@ -1,0 +1,209 @@
+/* ═══════════════════════════════════════════════════════════════ */
+/* ROOT THEME VARIABLES */
+/* ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Brand Colors */
+  --primary-gold: #ffd700;
+  --primary-gold-bright: #ffed4e;
+  --primary-dark: #0a0a0a;
+  --secondary-dark: #121212;
+  --accent-dark: #1a1a1a;
+
+  /* Text Colors */
+  --text-primary: #f5f5f5;
+  --text-secondary: #bbb;
+  --text-muted: #888;
+  --text-light: #666;
+
+  /* Borders & Backgrounds */
+  --border-gold-soft: rgba(255, 215, 0, 0.15);
+  --border-gold-medium: rgba(255, 215, 0, 0.3);
+  --bg-overlay-light: rgba(255, 215, 0, 0.05);
+  --bg-overlay-medium: rgba(255, 215, 0, 0.08);
+
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.4);
+  --shadow-gold: 0 0 30px rgba(255, 215, 0, 0.15);
+  --shadow-gold-heavy: 0 0 60px rgba(255, 215, 0, 0.3);
+
+  /* Typography */
+  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  --font-mono: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+
+  /* Transitions */
+  --transition-fast: 0.2s ease;
+  --transition-normal: 0.3s ease;
+  --transition-smooth: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ═══════════════════════════════════════════════════════════════ */
+/* BASE STYLES */
+/* ═══════════════════════════════════════════════════════════════ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
+}
+
+body {
+  font-family: var(--font-family);
+  background: var(--primary-dark);
+  color: var(--text-primary);
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+/* ═══════════════════════════════════════════════════════════════ */
+/* TYPOGRAPHY */
+/* ═══════════════════════════════════════════════════════════════ */
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 900;
+  letter-spacing: -1px;
+  color: var(--primary-gold);
+  text-transform: uppercase;
+}
+
+h1 { font-size: clamp(2rem, 6vw, 4rem); }
+h2 { font-size: clamp(1.75rem, 5vw, 3.5rem); }
+h3 { font-size: clamp(1.25rem, 4vw, 2.5rem); }
+h4 { font-size: 1.5rem; }
+h5 { font-size: 1.25rem; }
+h6 { font-size: 1rem; }
+
+p { font-size: 1rem; color: var(--text-secondary); line-height: 1.7; }
+
+a {
+  color: var(--primary-gold);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+a:hover {
+  color: var(--primary-gold-bright);
+  text-shadow: 0 0 10px var(--primary-gold);
+}
+
+/* ═══════════════════════════════════════════════════════════════ */
+/* BUTTONS */
+/* ═══════════════════════════════════════════════════════════════ */
+
+button, .btn {
+  font-family: var(--font-family);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  border: none;
+  border-radius: 6px;
+  transition: all var(--transition-smooth);
+  position: relative;
+}
+
+/* Primary Button */
+.btn-primary {
+  background: var(--primary-gold);
+  color: var(--primary-dark);
+  padding: 1rem 2.5rem;
+  font-size: 0.85rem;
+  box-shadow: var(--shadow-gold);
+}
+
+.btn-primary:hover {
+  transform: scale(1.05);
+  box-shadow: var(--shadow-gold-heavy);
+  background: var(--primary-gold-bright);
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+/* Secondary Button */
+.btn-secondary {
+  background: transparent;
+  color: var(--primary-gold);
+  border: 2px solid var(--primary-gold);
+  padding: 0.9rem 2rem;
+  font-size: 0.85rem;
+}
+
+.btn-secondary:hover {
+  background: var(--bg-overlay-medium);
+  border-color: var(--primary-gold-bright);
+}
+
+/* ═══════════════════════════════════════════════════════════════ */
+/* SCROLLBAR */
+/* ═══════════════════════════════════════════════════════════════ */
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--primary-dark);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-gold-medium);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-gold-soft);
+}
+
+/* ═══════════════════════════════════════════════════════════════ */
+/* ANIMATIONS */
+/* ═══════════════════════════════════════════════════════════════ */
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes glow {
+  0%, 100% { text-shadow: 0 0 10px rgba(255, 215, 0, 0.3); }
+  50% { text-shadow: 0 0 20px rgba(255, 215, 0, 0.6); }
+}
+
+/* ═══════════════════════════════════════════════════════════════ */
+/* RESPONSIVE */
+/* ═══════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  html { font-size: 14px; }
+  h1 { font-size: 2rem; }
+  h2 { font-size: 1.5rem; }
+}
+
+@media (max-width: 480px) {
+  html { font-size: 13px; }
+  h1 { font-size: 1.5rem; }
+  .btn-primary { padding: 0.75rem 1.5rem; font-size: 0.75rem; }
+}

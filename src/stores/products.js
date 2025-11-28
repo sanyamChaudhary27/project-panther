@@ -1,0 +1,69 @@
+import { defineStore } from 'pinia';
+
+export const useProductsStore = defineStore('products', {
+  state: () => ({
+    products: [
+      {
+        id: 'panther-core',
+        name: 'Panther Core',
+        price: 1999,
+        image: '🔥',
+        description: 'Balanced intensity for consistent performance. Perfect for daily training.',
+        ingredients: [
+          { name: 'Caffeine', amount: '250mg', benefit: 'Balanced Energy' },
+          { name: 'Citrulline Malate', amount: '5g', benefit: 'Muscle Pumps' },
+          { name: 'Beta-Alanine', amount: '2.5g', benefit: 'Extended Sets' },
+          { name: 'Creatine Monohydrate', amount: '1.5g', benefit: 'Strength' }
+        ],
+        servings: 30,
+        rating: 4.8,
+        reviews: 342,
+        inStock: true
+      },
+      {
+        id: 'panther-extreme',
+        name: 'Panther Extreme',
+        price: 2499,
+        image: '⚡',
+        description: 'Maximum intensity formula for extreme training sessions.',
+        ingredients: [
+          { name: 'Caffeine', amount: '400mg', benefit: 'Maximum Energy' },
+          { name: 'Citrulline Malate', amount: '8g', benefit: 'Intense Pumps' },
+          { name: 'Beta-Alanine', amount: '3.5g', benefit: 'Endurance' },
+          { name: 'Creatine Monohydrate', amount: '2.5g', benefit: 'Max Strength' }
+        ],
+        servings: 30,
+        rating: 4.7,
+        reviews: 198,
+        inStock: true
+      },
+      {
+        id: 'panther-elite',
+        name: 'Panther Elite',
+        price: 2999,
+        image: '💎',
+        description: 'Premium formula with advanced ingredients for elite athletes.',
+        ingredients: [
+          { name: 'Caffeine Anhydrous', amount: '300mg', benefit: 'Pure Energy' },
+          { name: 'Citrulline Malate', amount: '10g', benefit: 'Elite Pumps' },
+          { name: 'Beta-Alanine', amount: '4g', benefit: 'Peak Performance' },
+          { name: 'Creatine Monohydrate', amount: '3g', benefit: 'Elite Strength' }
+        ],
+        servings: 40,
+        rating: 4.9,
+        reviews: 287,
+        inStock: true
+      }
+    ]
+  }),
+
+  getters: {
+    getProductById: (state) => (id) => {
+      return state.products.find(p => p.id === id);
+    },
+
+    allProducts: (state) => state.products,
+
+    inStockProducts: (state) => state.products.filter(p => p.inStock),
+  }
+});
