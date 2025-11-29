@@ -8,31 +8,50 @@ const circle = ref(null)
 
 let mouseX = 0
 let mouseY = 0
-let rafId
+let rafId = null
+let isVisible = false
 
 function animateCircle() {
-  if (!circle.value) return;
-  circle.value.style.transform = `translate3d(${mouseX - 4}px,${mouseY - 4}px,0)`
+  if (circle.value && isVisible) {
+    circle.value.style.transform = `translate3d(${mouseX - 4}px, ${mouseY - 4}px, 0)`
+  }
   rafId = requestAnimationFrame(animateCircle)
 }
 
 function onMove(e) {
   mouseX = e.clientX
   mouseY = e.clientY
-  if (circle.value.style.display === 'none') circle.value.style.display = 'block'
+  
+  if (!isVisible && circle.value) {
+    isVisible = true
+    circle.value.style.opacity = '1'
+  }
+}
+
+function onLeave() {
+  if (circle.value) {
+    isVisible = false
+    circle.value.style.opacity = '0'
+  }
 }
 
 onMounted(() => {
-  document.addEventListener('mousemove', onMove)
-  document.addEventListener('mouseleave', () => { if (circle.value) circle.value.style.display = 'none' })
-  animateCircle()
+  // Wait for DOM to be ready
+  setTimeout(() => {
+    if (circle.value) {
+      circle.value.style.opacity = '0'
+      document.addEventListener('mousemove', onMove)
+      document.addEventListener('mouseleave', onLeave)
+      animateCircle()
+    }
+  }, 100)
 })
 
 onUnmounted(() => {
-  cancelAnimationFrame(rafId)
+  if (rafId) cancelAnimationFrame(rafId)
   document.removeEventListener('mousemove', onMove)
+  document.removeEventListener('mouseleave', onLeave)
 })
-
 </script>
 
 <style scoped>
@@ -44,10 +63,18 @@ onUnmounted(() => {
   border: 2px solid var(--primary-gold);
   border-radius: 50%;
   pointer-events: none;
-  opacity: 0.8;
-  box-shadow: 0 0 10px rgba(255,215,0,0.5);
-  display: none;
-  transition: filter 0.2s;
+  opacity: 0;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+  transition: opacity 0.2s ease;
   will-change: transform;
+  top: 0;
+  left: 0;
+}
+
+/* Hide on touch devices */
+@media (hover: none) and (pointer: coarse) {
+  .cursor-circle {
+    display: none;
+  }
 }
 </style>

@@ -8,6 +8,7 @@ export const useProductsStore = defineStore('products', {
         name: 'Panther Core',
         price: 1999,
         image: '🔥',
+        imageUrl: 'https://images.unsplash.com/photo-1593095948071-474c5cc2989d?w=400&h=400&fit=crop',
         description: 'Balanced intensity for consistent performance. Perfect for daily training.',
         ingredients: [
           { name: 'Caffeine', amount: '250mg', benefit: 'Balanced Energy' },
@@ -25,6 +26,7 @@ export const useProductsStore = defineStore('products', {
         name: 'Panther Extreme',
         price: 2499,
         image: '⚡',
+        imageUrl: 'https://images.unsplash.com/photo-1579758682665-53a1a614eea6?w=400&h=400&fit=crop',
         description: 'Maximum intensity formula for extreme training sessions.',
         ingredients: [
           { name: 'Caffeine', amount: '400mg', benefit: 'Maximum Energy' },
@@ -42,6 +44,7 @@ export const useProductsStore = defineStore('products', {
         name: 'Panther Elite',
         price: 2999,
         image: '💎',
+        imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=400&fit=crop',
         description: 'Premium formula with advanced ingredients for elite athletes.',
         ingredients: [
           { name: 'Caffeine Anhydrous', amount: '300mg', benefit: 'Pure Energy' },
