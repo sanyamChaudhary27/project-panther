@@ -10,41 +10,152 @@ let ctx, bolts = []
 let isMobile = false
 
 class LightningBranch {
-  constructor(startX, startY, angle, length, thickness, generation = 0) {
+  constructor(startX, startY, angle, length, thickness, generation = 0, maxGeneration = 3) {
     this.startX = startX
     this.startY = startY
     this.angle = angle
     this.length = length
     this.thickness = thickness
     this.generation = generation
+    this.maxGeneration = maxGeneration
     this.points = []
+    this.subBranches = []
     this.generatePath()
+    this.generateSubBranches()
   }
 
   generatePath() {
-    const segments = Math.max(12, Math.floor(this.length / 25))
-    const currentX = this.startX
-    const currentY = this.startY
+    const segments = Math.max(10, Math.floor(this.length / 20))
     let currentAngle = this.angle
 
-    this.points.push({ x: currentX, y: currentY, width: this.thickness })
+    this.points.push({ x: this.startX, y: this.startY, width: this.thickness })
 
     for (let i = 1; i <= segments; i++) {
       const progress = i / segments
       
-      const turbulence = (1 - progress) * 0.25
+      // Physics: turbulence decreases with progress
+      const turbulence = (1 - progress) * 0.2
       const angleDeviation = (Math.random() - 0.5) * turbulence
       currentAngle += angleDeviation
 
-      const segmentLength = (this.length / segments) * (0.9 + Math.random() * 0.2)
+      const segmentLength = (this.length / segments) * (0.85 + Math.random() * 0.3)
       
-      const nextX = this.points[i - 1].x + Math.sin(currentAngle) * segmentLength
-      const nextY = this.points[i - 1].y + Math.cos(currentAngle) * segmentLength
+      const prevPoint = this.points[i - 1]
+      const nextX = prevPoint.x + Math.sin(currentAngle) * segmentLength
+      const nextY = prevPoint.y + Math.cos(currentAngle) * segmentLength
 
-      const thicknessReduction = 1 - (progress * 0.6)
+      // PROGRESSIVE THINNING - reduces by 70% from start to end
+      const thicknessReduction = 1 - (progress * 0.7)
       const width = this.thickness * thicknessReduction
 
-      this.points.push({ x: nextX, y: nextY, width: Math.max(0.5, width) })
+      this.points.push({ x: nextX, y: nextY, width: Math.max(0.3, width) })
+    }
+  }
+
+  generateSubBranches() {
+    // CLIENT REQ: Sub-branches should also have sub-branches (recursive)
+    if (this.generation >= this.maxGeneration) return
+    if (this.points.length < 5) return
+
+    // Number of sub-branches based on generation
+    // Gen 0 (main): 2-3 branches
+    // Gen 1: 1-2 branches
+    // Gen 2+: 0-1 branches
+    const branchCountByGen = [
+      Math.floor(Math.random() * 2) + 2, // Gen 0: 2-3
+      Math.floor(Math.random() * 2) + 1, // Gen 1: 1-2
+      Math.random() > 0.5 ? 1 : 0         // Gen 2+: 0-1
+    ]
+    
+    const branchCount = branchCountByGen[Math.min(this.generation, 2)]
+
+    for (let i = 0; i < branchCount; i++) {
+      // Branch spawns at 30-70% along the parent
+      const spawnProgress = 0.3 + Math.random() * 0.4
+      const pointIndex = Math.floor(this.points.length * spawnProgress)
+      const branchPoint = this.points[pointIndex]
+      
+      if (!branchPoint) continue
+
+      // CLIENT REQ: Main branch becomes thinner as it partitions
+      // At branch point, thickness is already reduced by parent's progressive thinning
+      const thicknessAtBranchPoint = branchPoint.width
+      
+      // Sub-branch takes 40-60% of parent thickness at that point
+      const subBranchThickness = thicknessAtBranchPoint * (0.4 + Math.random() * 0.2)
+
+      // Branch angle: ±60° spread
+      const angleSpread = Math.PI / 3 // ±60°
+      const branchAngle = this.angle + (Math.random() - 0.5) * angleSpread
+
+      // Branch length: 30-50% of remaining parent length
+      const remainingLength = this.length * (1 - spawnProgress)
+      const branchLength = remainingLength * (0.3 + Math.random() * 0.2)
+
+      // Create sub-branch (which will recursively create its own sub-branches)
+      this.subBranches.push(new LightningBranch(
+        branchPoint.x,
+        branchPoint.y,
+        branchAngle,
+        branchLength,
+        subBranchThickness,
+        this.generation + 1,
+        this.maxGeneration
+      ))
+    }
+  }
+
+  draw(ctx, progress, opacity) {
+    if (this.points.length < 2) return
+
+    ctx.save()
+    ctx.globalAlpha = opacity
+    ctx.strokeStyle = '#ffd700'
+    ctx.shadowColor = '#ffd700'
+    ctx.shadowBlur = isMobile ? 10 : 15
+    ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
+
+    const visiblePoints = Math.ceil(this.points.length * progress)
+
+    // Draw main path with progressive width
+    for (let i = 0; i < visiblePoints - 1; i++) {
+      const p1 = this.points[i]
+      const p2 = this.points[i + 1]
+      
+      ctx.lineWidth = p1.width
+      
+      ctx.beginPath()
+      ctx.moveTo(p1.x, p1.y)
+      ctx.lineTo(p2.x, p2.y)
+      ctx.stroke()
+    }
+
+    // Secondary glow
+    ctx.globalAlpha = opacity * 0.4
+    ctx.strokeStyle = '#ffed4e'
+    ctx.shadowBlur = 8
+    
+    for (let i = 0; i < visiblePoints - 1; i++) {
+      const p1 = this.points[i]
+      const p2 = this.points[i + 1]
+      
+      ctx.lineWidth = p1.width * 0.5
+      
+      ctx.beginPath()
+      ctx.moveTo(p1.x, p1.y)
+      ctx.lineTo(p2.x, p2.y)
+      ctx.stroke()
+    }
+
+    ctx.restore()
+
+    // Draw sub-branches recursively
+    if (progress > 0.3) { // Sub-branches appear after 30% of parent is drawn
+      const subBranchProgress = Math.max(0, (progress - 0.3) / 0.7)
+      for (const subBranch of this.subBranches) {
+        subBranch.draw(ctx, subBranchProgress, opacity * 0.9)
+      }
     }
   }
 }
@@ -57,185 +168,70 @@ class Lightning {
     this.targetY = targetY
     this.startTime = Date.now()
     
-    // 15% chance for ultra-slow animation
-    this.isSlow = Math.random() < 0.15
-    this.duration = this.isSlow ? 800 : 180 // 800ms for slow, 180ms for normal
-    this.fadeDuration = this.isSlow ? 1200 : 700 // Slower fade overall
+    // CLIENT REQ: More cinematic lightning (25% chance, was 15%)
+    this.isSlow = Math.random() < 0.25
+    this.duration = this.isSlow ? 900 : 200
+    this.fadeDuration = this.isSlow ? 1400 : 800
     
     this.opacity = 1
     this.isMobile = isMobileDevice
     
     const dx = targetX - startX
     const dy = targetY - startY
-    this.totalLength = Math.sqrt(dx * dx + dy * dy)
-    
-    // CLIENT REQ: Lightning is too long - reduce by 20%
-    this.totalLength = this.totalLength * 0.8
+    this.totalLength = Math.sqrt(dx * dx + dy * dy) * 0.8
     
     const baseAngle = Math.atan2(dx, dy)
-    const angleVariation = (Math.random() - 0.5) * (Math.PI / 9)
+    const angleVariation = (Math.random() - 0.5) * (Math.PI / 9) // ±20°
     this.mainAngle = baseAngle + angleVariation
     
-    this.mainThickness = isMobileDevice ? 1.8 : 2.2
+    this.mainThickness = isMobileDevice ? 2.5 : 3.0
     
-    this.mainBolt = new LightningBranch(
+    // Create root branch (which will recursively create all sub-branches)
+    this.rootBranch = new LightningBranch(
       startX,
       startY,
       this.mainAngle,
       this.totalLength,
       this.mainThickness,
-      0
+      0,
+      3 // Max 3 generations of branches
     )
-    
-    this.branches = this.generateBranches()
-  }
-
-  generateBranches() {
-    const branches = []
-    const mainPoints = this.mainBolt.points
-    
-    // CLIENT REQ: Fewer branches (optimize performance)
-    // Was: Math.floor(this.totalLength / 150) + 1
-    // Now: Max 2 branches, 1 for shorter bolts
-    const maxBranches = this.totalLength > 400 ? 2 : 1
-    const branchCount = Math.min(maxBranches, Math.floor(this.totalLength / 200))
-    
-    for (let i = 0; i < branchCount; i++) {
-      const pointIndex = Math.floor(mainPoints.length * (0.2 + Math.random() * 0.5))
-      const branchPoint = mainPoints[pointIndex]
-      
-      if (!branchPoint) continue
-      
-      // CLIENT REQ: More spread on child branches
-      // Was: ±45° (Math.PI / 4)
-      // Now: ±60° (Math.PI / 3)
-      const branchAngle = this.mainAngle + (Math.random() - 0.5) * (Math.PI / 3)
-      
-      const remainingLength = this.totalLength * (1 - pointIndex / mainPoints.length)
-      const branchLength = remainingLength * (0.25 + Math.random() * 0.2)
-      
-      const branchThickness = branchPoint.width * (0.4 + Math.random() * 0.15)
-      
-      branches.push(new LightningBranch(
-        branchPoint.x,
-        branchPoint.y,
-        branchAngle,
-        branchLength,
-        branchThickness,
-        1
-      ))
-    }
-    
-    return branches
-  }
-
-  drawBranch(ctx, branch, progress, opacity) {
-    if (branch.points.length < 2) return
-    
-    ctx.save()
-    ctx.globalAlpha = opacity
-    ctx.strokeStyle = '#ffd700'
-    ctx.shadowColor = '#ffd700'
-    ctx.shadowBlur = this.isMobile ? 10 : 15
-    ctx.lineCap = 'round'
-    ctx.lineJoin = 'round'
-
-    const visiblePoints = Math.ceil(branch.points.length * progress)
-
-    for (let i = 0; i < visiblePoints - 1; i++) {
-      const p1 = branch.points[i]
-      const p2 = branch.points[i + 1]
-      
-      ctx.lineWidth = p1.width
-      
-      ctx.beginPath()
-      ctx.moveTo(p1.x, p1.y)
-      ctx.lineTo(p2.x, p2.y)
-      ctx.stroke()
-    }
-
-    ctx.globalAlpha = opacity * 0.4
-    ctx.strokeStyle = '#ffed4e'
-    ctx.shadowBlur = 8
-    
-    for (let i = 0; i < visiblePoints - 1; i++) {
-      const p1 = branch.points[i]
-      const p2 = branch.points[i + 1]
-      
-      ctx.lineWidth = p1.width * 0.5
-      
-      ctx.beginPath()
-      ctx.moveTo(p1.x, p1.y)
-      ctx.lineTo(p2.x, p2.y)
-      ctx.stroke()
-    }
-
-    ctx.restore()
   }
 
   draw(ctx) {
     const elapsed = Date.now() - this.startTime
     let progress = 1
-    let mainOpacity = 1
-    let branchOpacity = 1
+    let opacity = 1
 
     if (elapsed < this.duration) {
       // Drawing phase
       progress = Math.min(elapsed / this.duration, 1)
       
-      // Smooth easing for slow animation
       if (this.isSlow) {
         progress = this.easeOutCubic(progress)
       }
       
-      mainOpacity = 1
-      branchOpacity = 1
+      opacity = 1
     } else {
-      // Fade phase - CLIENT REQ: Child branches fade first
+      // Fade phase
       const fadeElapsed = elapsed - this.duration
       const fadeProgress = Math.min(fadeElapsed / this.fadeDuration, 1)
-      
-      // Main bolt fades slowly
-      mainOpacity = 1 - (fadeProgress * 0.8) // Fades to 0.2, then disappears
-      
-      // Branches fade faster (start fading earlier)
-      const branchFadeProgress = Math.min(fadeElapsed / (this.fadeDuration * 0.7), 1)
-      branchOpacity = 1 - branchFadeProgress
-      
+      opacity = 1 - fadeProgress
       progress = 1
     }
 
-    if (mainOpacity <= 0) return
+    if (opacity <= 0) return
 
-    // Draw main bolt
-    this.drawBranch(ctx, this.mainBolt, progress, mainOpacity)
-    
-    // Draw branches with separate opacity (fades first)
-    if (this.isSlow) {
-      // For slow animation: branches appear after main bolt reaches 40%
-      const branchProgress = Math.max(0, (progress - 0.4) / 0.6)
-      if (branchProgress > 0) {
-        for (const branch of this.branches) {
-          this.drawBranch(ctx, branch, branchProgress, branchOpacity * 0.85)
-        }
-      }
-    } else {
-      // Normal animation: slight delay
-      const branchProgress = Math.max(0, progress - 0.15)
-      for (const branch of this.branches) {
-        this.drawBranch(ctx, branch, branchProgress, branchOpacity * 0.85)
-      }
-    }
+    // Draw entire branch tree recursively
+    this.rootBranch.draw(ctx, progress, opacity)
   }
 
-  // Smooth easing function for slow animation
   easeOutCubic(t) {
     return 1 - Math.pow(1 - t, 3)
   }
 
   get finished() {
-    const totalDuration = this.duration + this.fadeDuration
-    return Date.now() - this.startTime > totalDuration
+    return Date.now() - this.startTime > this.duration + this.fadeDuration
   }
 }
 
@@ -254,9 +250,8 @@ function spawnRandom() {
   const fromX = Math.random() * w
   const fromY = Math.random() * (h * 0.05)
   
-  // Reduced length: 50-70% of screen height (was 60-85%)
-  const toX = fromX + (Math.random() - 0.5) * 180
-  const toY = fromY + Math.random() * (h * 0.45) + (h * 0.2)
+  const toX = fromX + (Math.random() - 0.5) * 200
+  const toY = fromY + Math.random() * (h * 0.5) + (h * 0.2)
   
   bolts.push(new Lightning(fromX, fromY, toX, toY, isMobile))
 }
@@ -293,16 +288,13 @@ onMounted(() => {
   ctx = canvas.value.getContext('2d')
   animate()
   
-  // CLIENT REQ: 10% fewer strikes
-  // Was: 65% chance every 2000ms
-  // Now: 68% chance every 2200ms (net ~15% reduction)
   intervalId = setInterval(() => {
-    if (Math.random() > 0.68) {
+    if (Math.random() > 0.70) { // Slightly reduced frequency
       if (!isMobile || Math.random() > 0.5) {
         spawnRandom()
       }
     }
-  }, 2200)
+  }, 2400)
   
   window.addEventListener('resize', () => {
     isMobile = window.innerWidth < 768

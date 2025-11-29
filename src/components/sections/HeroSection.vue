@@ -3,12 +3,22 @@
     <div class="hero-content">
       <h1>UNLEASH<br />THE BEAST</h1>
       <p class="hero-subtitle">Elite Pre-Workout Performance</p>
-      <button class="btn-primary hero-btn" @click="strikeBtn">DISCOVER MORE</button>
+      <button ref="heroButtonRef" class="btn-primary hero-btn" @click="strikeBtn">DISCOVER MORE</button>
     </div>
   </section>
 </template>
 
 <script setup>
+import { ref } from 'vue'
+import { useMagneticHover } from '../../composables/useMagneticHover'
+
+const heroButtonRef = ref(null)
+
+useMagneticHover(heroButtonRef, {
+  strength: 0.35,
+  speed: 0.18,
+  maxDistance: 100
+})
 function strikeBtn(e) {
   const rect = e.target.getBoundingClientRect()
   const detail = {

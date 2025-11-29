@@ -1,5 +1,5 @@
 <template>
-  <article class="product-card">
+  <article ref="cardRef" class="product-card">
     <div class="product-image-section">
         <!-- Coming Soon Badge -->
         <div v-if="!product.available" class="coming-soon-badge">
@@ -73,6 +73,7 @@ import { useCartStore } from '../../stores/cart'
 import { useToast } from '../../composables/useToast'
 import IngredientBadge from './IngredientBadge.vue'
 import Product3DImage from './Product3DImage.vue'
+import { useMagneticHover } from '../../composables/useMagneticHover'
 
 const props = defineProps({
   product: { type: Object, required: true }
@@ -81,6 +82,12 @@ const props = defineProps({
 const cart = useCartStore()
 const { success } = useToast()
 const imageError = ref(false)
+const cardRef = ref(null)
+useMagneticHover(cardRef, {
+  strength: 0.25,
+  speed: 0.12,
+  maxDistance: 150
+})
 
 function handleAdd() {
   cart.addToCart(props.product, 1)
@@ -104,12 +111,16 @@ function handleImageError() {
   overflow: hidden;
   animation: float 4s ease-in-out infinite;
   transition: transform 0.3s ease;
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+  will-change: transform;
 }
 
 .product-card:hover {
   transform: translateY(-8px);
   border-color: rgba(255,215,0,0.4);
-  box-shadow: 0 8px 60px rgba(255,215,0,0.2);
+  box-shadow: 
+    0 8px 60px rgba(255, 215, 0, 0.2),
+    0 0 40px rgba(255, 215, 0, 0.15);
 }
 
 .product-image-section {
@@ -255,6 +266,11 @@ h3 {
   .w-full {
     width: calc(100% - 3rem);
     margin: 0 1.5rem 1.5rem 1.5rem;
+  }
+}
+@media (max-width: 768px) {
+  .product-card {
+    transform: none !important;
   }
 }
 .coming-soon-badge {
