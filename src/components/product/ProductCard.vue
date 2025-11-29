@@ -1,41 +1,39 @@
 <template>
   <article ref="cardRef" class="product-card">
     <div class="product-image-section">
-        <!-- Coming Soon Badge -->
-        <div v-if="!product.available" class="coming-soon-badge">
-            <span>COMING SOON</span>
-         </div>
-  
-         <!-- 3D Image Carousel if available -->
-        <Product3DImage v-if="product.available && product.images && product.images.length > 0" :images="product.images" />
-  
-        <!-- Fallback single image -->
-        <div v-else-if="product.available" class="image-wrapper">
-            <img 
-            v-if="product.imageUrl" 
-            :src="product.imageUrl" 
-            :alt="product.name"
-            @error="handleImageError"
-            class="product-image"
-            />
-            <div v-else class="emoji-fallback">{{ product.image }}</div>
-        </div>
-  
-        <!-- Blurred preview for coming soon -->
-        <div v-else class="image-wrapper blurred">
-          <img 
+      <!-- Rating Badge -->
+      <div class="rating-badge">
+        <span class="stars">⭐ {{ product.rating }}</span>
+        <span class="reviews">({{ product.reviews }} reviews)</span>
+      </div>
+    
+      <!-- Coming Soon Badge -->
+      <div v-if="!product.available" class="coming-soon-badge">
+        <span>COMING SOON</span>
+      </div>
+      
+      <!-- Static Image -->
+      <div v-if="product.available" class="image-wrapper">
+        <img 
+          v-if="product.imageUrl" 
+          :src="product.imageUrl" 
+          :alt="product.name"
+          @error="handleImageError"
+          class="product-image"
+        />
+        <div v-else class="emoji-fallback">{{ product.image }}</div>
+      </div>
+      
+      <!-- Blurred preview for coming soon -->
+      <div v-else class="image-wrapper blurred">
+        <img 
           v-if="product.imageUrl" 
           :src="product.imageUrl" 
           :alt="product.name"
           class="product-image"
-          />
+        />
         <div v-else class="emoji-fallback">{{ product.image }}</div>
-        </div>
-  
-        <div class="rating-badge">
-          <span class="stars">⭐ {{ product.rating }}</span>
-         <span class="reviews">({{ product.reviews }} reviews)</span>
-        </div>
+      </div>
     </div>
 
 
@@ -72,7 +70,6 @@ import { ref } from 'vue'
 import { useCartStore } from '../../stores/cart'
 import { useToast } from '../../composables/useToast'
 import IngredientBadge from './IngredientBadge.vue'
-import Product3DImage from './Product3DImage.vue'
 import { useMagneticHover } from '../../composables/useMagneticHover'
 
 const props = defineProps({
@@ -137,6 +134,8 @@ function handleImageError() {
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+  overflow: hidden;
 }
 
 .product-image {
@@ -161,7 +160,8 @@ function handleImageError() {
   position: absolute;
   top: 1rem;
   right: 1rem;
-  background: rgba(10,10,10,0.9);
+  z-index: 10;
+  background: rgba(10,10,10,0.95);
   padding: 0.5rem 0.75rem;
   border-radius: 20px;
   border: 1px solid rgba(255,215,0,0.3);
@@ -170,6 +170,8 @@ function handleImageError() {
   flex-direction: column;
   gap: 0.2rem;
   align-items: flex-end;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
 .stars {
