@@ -9,6 +9,11 @@ export const useProductsStore = defineStore('products', {
         price: 1999,
         image: '🔥',
         imageUrl: 'https://images.unsplash.com/photo-1593095948071-474c5cc2989d?w=400&h=400&fit=crop',
+        images: [
+          'https://images.unsplash.com/photo-1593095948071-474c5cc2989d?w=600&h=600&fit=crop',
+          'https://images.unsplash.com/photo-1579758682665-53a1a614eea6?w=600&h=600&fit=crop',
+          'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=600&h=600&fit=crop'
+        ],
         description: 'Balanced intensity for consistent performance. Perfect for daily training.',
         ingredients: [
           { name: 'Caffeine', amount: '250mg', benefit: 'Balanced Energy' },
@@ -19,7 +24,8 @@ export const useProductsStore = defineStore('products', {
         servings: 30,
         rating: 4.8,
         reviews: 342,
-        inStock: true
+        inStock: true,
+        available: true
       },
       {
         id: 'panther-extreme',
@@ -27,6 +33,7 @@ export const useProductsStore = defineStore('products', {
         price: 2499,
         image: '⚡',
         imageUrl: 'https://images.unsplash.com/photo-1579758682665-53a1a614eea6?w=400&h=400&fit=crop',
+        images: [],
         description: 'Maximum intensity formula for extreme training sessions.',
         ingredients: [
           { name: 'Caffeine', amount: '400mg', benefit: 'Maximum Energy' },
@@ -37,7 +44,8 @@ export const useProductsStore = defineStore('products', {
         servings: 30,
         rating: 4.7,
         reviews: 198,
-        inStock: true
+        inStock: false,
+        available: false
       },
       {
         id: 'panther-elite',
@@ -45,6 +53,7 @@ export const useProductsStore = defineStore('products', {
         price: 2999,
         image: '💎',
         imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=400&fit=crop',
+        images: [],
         description: 'Premium formula with advanced ingredients for elite athletes.',
         ingredients: [
           { name: 'Caffeine Anhydrous', amount: '300mg', benefit: 'Pure Energy' },
@@ -55,7 +64,8 @@ export const useProductsStore = defineStore('products', {
         servings: 40,
         rating: 4.9,
         reviews: 287,
-        inStock: true
+        inStock: false,
+        available: false
       }
     ]
   }),
@@ -67,6 +77,8 @@ export const useProductsStore = defineStore('products', {
 
     allProducts: (state) => state.products,
 
-    inStockProducts: (state) => state.products.filter(p => p.inStock),
+    availableProducts: (state) => state.products.filter(p => p.available),
+
+    comingSoonProducts: (state) => state.products.filter(p => !p.available),
   }
 });

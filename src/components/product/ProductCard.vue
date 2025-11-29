@@ -1,21 +1,43 @@
 <template>
   <article class="product-card">
     <div class="product-image-section">
-      <div class="image-wrapper">
-        <img 
+        <!-- Coming Soon Badge -->
+        <div v-if="!product.available" class="coming-soon-badge">
+            <span>COMING SOON</span>
+         </div>
+  
+         <!-- 3D Image Carousel if available -->
+        <Product3DImage v-if="product.available && product.images && product.images.length > 0" :images="product.images" />
+  
+        <!-- Fallback single image -->
+        <div v-else-if="product.available" class="image-wrapper">
+            <img 
+            v-if="product.imageUrl" 
+            :src="product.imageUrl" 
+            :alt="product.name"
+            @error="handleImageError"
+            class="product-image"
+            />
+            <div v-else class="emoji-fallback">{{ product.image }}</div>
+        </div>
+  
+        <!-- Blurred preview for coming soon -->
+        <div v-else class="image-wrapper blurred">
+          <img 
           v-if="product.imageUrl" 
           :src="product.imageUrl" 
           :alt="product.name"
-          @error="handleImageError"
           class="product-image"
-        />
+          />
         <div v-else class="emoji-fallback">{{ product.image }}</div>
-      </div>
-      <div class="rating-badge">
-        <span class="stars">⭐ {{ product.rating }}</span>
-        <span class="reviews">({{ product.reviews }} reviews)</span>
-      </div>
+        </div>
+  
+        <div class="rating-badge">
+          <span class="stars">⭐ {{ product.rating }}</span>
+         <span class="reviews">({{ product.reviews }} reviews)</span>
+        </div>
     </div>
+
 
     <div class="product-header">
       <h3>{{ product.name }}</h3>
@@ -50,6 +72,7 @@ import { ref } from 'vue'
 import { useCartStore } from '../../stores/cart'
 import { useToast } from '../../composables/useToast'
 import IngredientBadge from './IngredientBadge.vue'
+import Product3DImage from './Product3DImage.vue'
 
 const props = defineProps({
   product: { type: Object, required: true }
@@ -233,5 +256,40 @@ h3 {
     width: calc(100% - 3rem);
     margin: 0 1.5rem 1.5rem 1.5rem;
   }
+}
+.coming-soon-badge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.95) 0%, rgba(234, 179, 8, 0.95) 100%);
+  padding: 1.5rem 3rem;
+  border-radius: 12px;
+  box-shadow: 0 0 40px rgba(255, 215, 0, 0.6);
+  animation: comingSoonPulse 2s ease-in-out infinite;
+}
+
+@keyframes comingSoonPulse {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+    box-shadow: 0 0 40px rgba(255, 215, 0, 0.6);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.05);
+    box-shadow: 0 0 60px rgba(255, 215, 0, 0.9);
+  }
+}
+
+.coming-soon-badge span {
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: #0a0a0a;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.blurred img {
+  filter: blur(8px) brightness(0.4);
 }
 </style>

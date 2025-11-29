@@ -5,8 +5,9 @@
       :space-between="20"
       :loop="true"
       :autoplay="{
-        delay: 5000,
+        delay: 7000,
         disableOnInteraction: false,
+        pauseOnMouseEnter: true,
       }"
       :pagination="{ clickable: true }"
       :navigation="true"
