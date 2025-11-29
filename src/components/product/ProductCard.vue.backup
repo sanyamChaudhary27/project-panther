@@ -48,20 +48,16 @@
 <script setup>
 import { ref } from 'vue'
 import { useCartStore } from '../../stores/cart'
-import { useToast } from '../../composables/useToast'
 import IngredientBadge from './IngredientBadge.vue'
 
 const props = defineProps({
   product: { type: Object, required: true }
 })
-
 const cart = useCartStore()
-const { success } = useToast()
 const imageError = ref(false)
 
 function handleAdd() {
   cart.addToCart(props.product, 1)
-  success(`🔥 ${props.product.name} added to cart!`, 3000)
 }
 
 function handleImageError() {

@@ -7,7 +7,6 @@
     <Navbar />
     <router-view />
     <Footer />
-    <Toast />
   </div>
 </template>
 
@@ -18,7 +17,6 @@ import CursorCircle from './components/effects/CursorCircle.vue'
 import AmbientGradient from './components/effects/AmbientGradient.vue'
 import ParticleSystem from './components/effects/ParticleSystem.vue'
 import CanvasLightning from './components/effects/CanvasLightning.vue'
-import Toast from './components/common/Toast.vue'
 </script>
 
 <style>
