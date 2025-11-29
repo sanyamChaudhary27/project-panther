@@ -3,24 +3,23 @@
     <h2 class="arsenal-title">OUR ARSENAL</h2>
     
     <ProductCardSkeleton v-if="loading" />
-    <ProductCard v-else-if="coreProduct" :product="coreProduct" />
-    <p v-else class="error-message">Product not available</p>
+    <ProductCarousel v-else-if="allProducts.length > 0" :products="allProducts" />
+    <p v-else class="error-message">No products available</p>
   </section>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useProductsStore } from '../../stores/products'
-import ProductCard from '../product/ProductCard.vue'
+import ProductCarousel from '../product/ProductCarousel.vue'
 import ProductCardSkeleton from '../product/ProductCardSkeleton.vue'
 
 const productsStore = useProductsStore()
 const loading = ref(true)
 
-const coreProduct = computed(() => productsStore.getProductById('panther-core'))
+const allProducts = computed(() => productsStore.allProducts)
 
 onMounted(() => {
-  // Simulate loading delay (remove in production or when real API exists)
   setTimeout(() => {
     loading.value = false
   }, 1500)
