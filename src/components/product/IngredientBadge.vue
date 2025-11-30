@@ -70,11 +70,19 @@ const tooltipInfo = computed(() => {
   transform: translateX(4px);
 }
 
-.ingredient-icon {
-  font-size: 1.2rem;
-  filter: grayscale(0.3);
+.info-icon {
+  font-size: 1.1rem;
+  opacity: 0.7;
+  transition: all 0.3s ease;
+  background: rgba(255, 215, 0, 0.1);
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
-
 .ingredient-info {
   flex: 1;
   display: flex;
@@ -109,5 +117,7 @@ const tooltipInfo = computed(() => {
 
 .ingredient-badge:hover .info-icon {
   opacity: 1;
+  background: rgba(255, 215, 0, 0.2);
+  transform: scale(1.15);
 }
 </style>
