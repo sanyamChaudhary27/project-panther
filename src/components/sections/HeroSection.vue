@@ -11,6 +11,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useMagneticHover } from '../../composables/useMagneticHover'
+import { useRipple } from '../../composables/useRipple'
 
 const heroButtonRef = ref(null)
 
@@ -19,6 +20,12 @@ useMagneticHover(heroButtonRef, {
   speed: 0.18,
   maxDistance: 100
 })
+
+useRipple(heroButtonRef, {
+  color: 'rgba(255, 215, 0, 0.4)',
+  duration: 600
+})
+
 function strikeBtn(e) {
   const rect = e.target.getBoundingClientRect()
   const detail = {

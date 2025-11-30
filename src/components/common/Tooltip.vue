@@ -2,22 +2,35 @@
   <div 
     ref="wrapperRef"
     class="tooltip-wrapper" 
-    @mouseenter="show" 
-    @mouseleave="hide" 
-    @click.stop="toggle"
+    @mouseenter="handleMouseEnter" 
+    @mouseleave="handleMouseLeave" 
+    @click.stop="handleClick"
   >
     <slot></slot>
+    
+    <!-- Desktop Tooltip (No Overlay) -->
+    <transition name="tooltip-slide">
+      <div 
+        v-if="isVisible && !isMobile" 
+        class="tooltip-desktop"
+        @mouseenter="handleMouseEnter"
+        @mouseleave="handleMouseLeave"
+      >
+        <div class="tooltip-inner-desktop">
+          <h4 v-if="title" class="tooltip-title">{{ title }}</h4>
+          <p class="tooltip-text">{{ content }}</p>
+        </div>
+        <div class="tooltip-arrow-desktop"></div>
+      </div>
+    </transition>
   </div>
   
+  <!-- Mobile Tooltip (With Overlay) -->
   <teleport to="body">
     <transition name="tooltip-fade">
-      <div v-if="isVisible" class="tooltip-overlay" @click="handleOverlayClick">
-        <div 
-          class="tooltip-content" 
-          :style="tooltipStyle"
-          @click.stop
-        >
-          <button class="tooltip-close" @click="toggle">✕</button>
+      <div v-if="isVisible && isMobile" class="tooltip-overlay-mobile" @click="hide">
+        <div class="tooltip-content-mobile" @click.stop>
+          <button class="tooltip-close" @click="hide">✕</button>
           <h4 v-if="title" class="tooltip-title">{{ title }}</h4>
           <p class="tooltip-text">{{ content }}</p>
         </div>
@@ -27,9 +40,9 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 
-const props = defineProps({
+defineProps({
   title: {
     type: String,
     default: ''
@@ -37,84 +50,55 @@ const props = defineProps({
   content: {
     type: String,
     required: true
-  },
-  position: {
-    type: String,
-    default: 'top'
   }
 })
 
 const wrapperRef = ref(null)
 const isVisible = ref(false)
-const tooltipStyle = ref({})
+const isMobile = ref(false)
 let timeout = null
 
-function calculatePosition() {
-  if (!wrapperRef.value) return
-  
-  const rect = wrapperRef.value.getBoundingClientRect()
-  const isMobile = window.innerWidth < 768
-  
-  if (isMobile) {
-    // Center on screen for mobile
-    tooltipStyle.value = {
-      position: 'fixed',
-      top: '50%',
-      left: '50%',
-      transform: 'translate(-50%, -50%)',
-      maxWidth: 'calc(100vw - 40px)',
-      minWidth: 'calc(100vw - 40px)'
-    }
-  } else {
-    // Position near element for desktop
-    tooltipStyle.value = {
-      position: 'fixed',
-      top: `${rect.bottom + 10}px`,
-      left: `${rect.left + rect.width / 2}px`,
-      transform: 'translateX(-50%)',
-      maxWidth: '320px',
-      minWidth: '250px'
-    }
-  }
+function checkMobile() {
+  isMobile.value = window.innerWidth < 768
 }
 
-function show() {
-  if (window.innerWidth >= 768) {
+function handleMouseEnter() {
+  if (!isMobile.value) {
     clearTimeout(timeout)
     timeout = setTimeout(() => {
-      calculatePosition()
       isVisible.value = true
-    }, 300)
-  }
-}
-
-function hide() {
-  if (window.innerWidth >= 768) {
-    clearTimeout(timeout)
-    timeout = setTimeout(() => {
-      isVisible.value = false
     }, 200)
   }
 }
 
-function toggle() {
-  if (isVisible.value) {
-    isVisible.value = false
-  } else {
-    calculatePosition()
-    isVisible.value = true
-    
-    // Auto-hide after 8 seconds
+function handleMouseLeave() {
+  if (!isMobile.value) {
     clearTimeout(timeout)
     timeout = setTimeout(() => {
       isVisible.value = false
-    }, 8000)
+    }, 10)
   }
 }
 
-function handleOverlayClick() {
+function handleClick() {
+  if (isMobile.value) {
+    isVisible.value = !isVisible.value
+  }
+}
+
+function hide() {
   isVisible.value = false
 }
+
+onMounted(() => {
+  checkMobile()
+  window.addEventListener('resize', checkMobile)
+})
+
+onUnmounted(() => {
+  clearTimeout(timeout)
+  window.removeEventListener('resize', checkMobile)
+})
 </script>
 
 <style scoped>
@@ -124,38 +108,108 @@ function handleOverlayClick() {
   cursor: help;
 }
 
-.tooltip-overlay {
+/* ============ DESKTOP TOOLTIP (NO OVERLAY) ============ */
+.tooltip-desktop {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  pointer-events: auto;
+}
+
+.tooltip-inner-desktop {
+  background: rgba(15, 15, 15, 0.98);
+  border: 2px solid rgba(255, 215, 0, 0.4);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  min-width: 280px;
+  max-width: 320px;
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.8),
+    0 0 30px rgba(255, 215, 0, 0.15),
+    inset 0 0 20px rgba(255, 215, 0, 0.05);
+  backdrop-filter: blur(10px);
+}
+
+.tooltip-arrow-desktop {
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid rgba(255, 215, 0, 0.4);
+}
+
+.tooltip-arrow-desktop::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 7px solid rgba(15, 15, 15, 0.98);
+}
+
+/* Desktop Slide Animation */
+.tooltip-slide-enter-active {
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.tooltip-slide-leave-active {
+  transition: all 0.2s ease;
+}
+
+.tooltip-slide-enter-from {
+  opacity: 0;
+  transform: translateX(-50%) translateY(10px);
+}
+
+.tooltip-slide-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(5px);
+}
+
+/* ============ MOBILE TOOLTIP (WITH OVERLAY) ============ */
+.tooltip-overlay-mobile {
   position: fixed;
   inset: 0;
   z-index: 10000;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 20px;
 }
 
-.tooltip-content {
+.tooltip-content-mobile {
   background: rgba(15, 15, 15, 0.98);
   border: 2px solid rgba(255, 215, 0, 0.4);
   border-radius: 12px;
-  padding: 1.25rem 1.5rem;
+  padding: 1.5rem;
+  max-width: calc(100vw - 40px);
+  width: 100%;
   box-shadow: 
-    0 20px 60px rgba(0, 0, 0, 0.8),
-    0 0 40px rgba(255, 215, 0, 0.2);
-  backdrop-filter: blur(20px);
+    0 20px 60px rgba(0, 0, 0, 0.9),
+    0 0 40px rgba(255, 215, 0, 0.3);
   position: relative;
-  z-index: 10001;
-  animation: tooltipPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: mobileTooltipPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-@keyframes tooltipPop {
+@keyframes mobileTooltipPop {
   0% {
-    transform: translate(-50%, -50%) scale(0.8);
+    transform: scale(0.8);
     opacity: 0;
   }
   100% {
-    transform: translate(-50%, -50%) scale(1);
+    transform: scale(1);
     opacity: 1;
   }
 }
@@ -164,14 +218,14 @@ function handleOverlayClick() {
   position: absolute;
   top: 0.75rem;
   right: 0.75rem;
-  background: none;
-  border: none;
-  color: #999;
-  font-size: 1.4rem;
+  background: rgba(255, 215, 0, 0.1);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  color: var(--primary-gold);
+  font-size: 1.2rem;
   cursor: pointer;
   padding: 0;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -181,29 +235,11 @@ function handleOverlayClick() {
 }
 
 .tooltip-close:hover {
-  color: var(--primary-gold);
-  background: rgba(255, 215, 0, 0.1);
+  background: rgba(255, 215, 0, 0.2);
   transform: rotate(90deg);
 }
 
-.tooltip-title {
-  font-size: 0.95rem;
-  font-weight: 900;
-  color: var(--primary-gold);
-  margin-bottom: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  padding-right: 2rem;
-  text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
-}
-
-.tooltip-text {
-  font-size: 0.85rem;
-  color: #ddd;
-  line-height: 1.7;
-  margin: 0;
-}
-
+/* Mobile Fade Animation */
 .tooltip-fade-enter-active,
 .tooltip-fade-leave-active {
   transition: opacity 0.3s ease;
@@ -214,13 +250,28 @@ function handleOverlayClick() {
   opacity: 0;
 }
 
+/* ============ SHARED STYLES ============ */
+.tooltip-title {
+  font-size: 0.9rem;
+  font-weight: 900;
+  color: var(--primary-gold);
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+.tooltip-text {
+  font-size: 0.85rem;
+  color: #ddd;
+  line-height: 1.7;
+  margin: 0;
+}
+
 @media (max-width: 768px) {
-  .tooltip-content {
-    padding: 1.5rem;
-  }
-  
   .tooltip-title {
     font-size: 1rem;
+    padding-right: 2rem;
   }
   
   .tooltip-text {

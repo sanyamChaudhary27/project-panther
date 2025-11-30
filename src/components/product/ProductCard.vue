@@ -59,7 +59,7 @@
       <span class="servings">{{ product.servings }} servings</span>
     </div>
 
-    <button class="btn-primary w-full" @click="handleAdd">
+    <button ref="addButtonRef" class="btn-primary w-full" @click="handleAdd">
       Add to Cart
     </button>
   </article>
@@ -69,8 +69,9 @@
 import { ref } from 'vue'
 import { useCartStore } from '../../stores/cart'
 import { useToast } from '../../composables/useToast'
-import IngredientBadge from './IngredientBadge.vue'
 import { useMagneticHover } from '../../composables/useMagneticHover'
+import { useRipple } from '../../composables/useRipple'
+import IngredientBadge from './IngredientBadge.vue'
 
 const props = defineProps({
   product: { type: Object, required: true }
@@ -80,10 +81,17 @@ const cart = useCartStore()
 const { success } = useToast()
 const imageError = ref(false)
 const cardRef = ref(null)
+const addButtonRef = ref(null)
+
 useMagneticHover(cardRef, {
   strength: 0.25,
   speed: 0.12,
   maxDistance: 150
+})
+
+useRipple(addButtonRef, {
+  color: 'rgba(10, 10, 10, 0.3)',
+  duration: 600
 })
 
 function handleAdd() {

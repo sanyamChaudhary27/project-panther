@@ -11,8 +11,14 @@
 <script setup>
 import { ref } from 'vue'
 import { useMagneticHover } from '../../composables/useMagneticHover'
+import { useRipple } from '../../composables/useRipple'
 
 const ctaButtonRef = ref(null)
+
+useRipple(ctaButtonRef, {
+  color: 'rgba(255, 215, 0, 0.4)',
+  duration: 700
+})
 
 useMagneticHover(ctaButtonRef, {
   strength: 0.4,
