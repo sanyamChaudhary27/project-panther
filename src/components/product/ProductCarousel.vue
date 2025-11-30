@@ -1,17 +1,10 @@
 <template>
-  <div 
-    class="product-carousel"
-    @mouseenter="pauseAutoplay"
-    @mouseleave="resumeAutoplay"
-    @touchstart="pauseAutoplay"
-    @touchend="handleTouchEnd"
-  >
+  <div class="product-carousel">
     <swiper
       ref="swiperRef"
       :slides-per-view="1"
       :space-between="20"
       :loop="true"
-      :autoplay="autoplayConfig"
       :pagination="{ clickable: true }"
       :navigation="true"
       :breakpoints="{
@@ -35,9 +28,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref } from 'vue'
 import { Swiper, SwiperSlide } from 'swiper/vue'
-import { Autoplay, Pagination, Navigation } from 'swiper/modules'
+import { Pagination, Navigation } from 'swiper/modules'
 import ProductCard from './ProductCard.vue'
 
 import 'swiper/css'
@@ -51,39 +44,8 @@ defineProps({
   }
 })
 
-const modules = [Autoplay, Pagination, Navigation]
+const modules = [Pagination, Navigation]
 const swiperRef = ref(null)
-const autoplayConfig = ref({
-  delay: 7000,
-  disableOnInteraction: false,
-  pauseOnMouseEnter: false,
-})
-
-let touchEndTimeout = null
-
-function pauseAutoplay() {
-  if (swiperRef.value && swiperRef.value.swiper) {
-    swiperRef.value.swiper.autoplay.stop()
-  }
-}
-
-function resumeAutoplay() {
-  if (swiperRef.value && swiperRef.value.swiper) {
-    swiperRef.value.swiper.autoplay.start()
-  }
-}
-
-function handleTouchEnd() {
-  // Resume after 3 seconds of no touching
-  clearTimeout(touchEndTimeout)
-  touchEndTimeout = setTimeout(() => {
-    resumeAutoplay()
-  }, 3000)
-}
-
-onUnmounted(() => {
-  clearTimeout(touchEndTimeout)
-})
 </script>
 
 <style scoped>
