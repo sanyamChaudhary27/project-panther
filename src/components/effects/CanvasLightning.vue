@@ -1,3 +1,6 @@
+<template>
+  <canvas ref="canvas" class="lightning-canvas"></canvas>
+</template>
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 
@@ -307,3 +310,15 @@ onUnmounted(() => {
   document.removeEventListener('visibilitychange', handleVisibilityChange)
 })
 </script>
+
+<style scoped>
+.lightning-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 10;
+  pointer-events: none;
+  background: none;
+}
+</style>
