@@ -1,13 +1,10 @@
-<template>
-  <canvas ref="canvas" class="lightning-canvas"></canvas>
-</template>
-
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 
 const canvas = ref(null)
 let ctx, bolts = []
 let isMobile = false
+let isPaused = false
 
 class LightningBranch {
   constructor(startX, startY, angle, length, thickness, generation = 0, maxGeneration = 3) {
@@ -33,18 +30,19 @@ class LightningBranch {
     for (let i = 1; i <= segments; i++) {
       const progress = i / segments
       
-      // Physics: turbulence decreases with progress
-      const turbulence = (1 - progress) * 0.2
+      // OPTIMIZATION: 10% MORE CHAOS (0.2 → 0.22)
+      const turbulence = (1 - progress) * 0.22
       const angleDeviation = (Math.random() - 0.5) * turbulence
       currentAngle += angleDeviation
 
-      const segmentLength = (this.length / segments) * (0.85 + Math.random() * 0.3)
+      // OPTIMIZATION: More segment variance (0.85+0.3 → 0.8+0.4)
+      const segmentLength = (this.length / segments) * (0.8 + Math.random() * 0.4)
       
       const prevPoint = this.points[i - 1]
       const nextX = prevPoint.x + Math.sin(currentAngle) * segmentLength
       const nextY = prevPoint.y + Math.cos(currentAngle) * segmentLength
 
-      // PROGRESSIVE THINNING - reduces by 70% from start to end
+      // Progressive thinning - NO COMPROMISE
       const thicknessReduction = 1 - (progress * 0.7)
       const width = this.thickness * thicknessReduction
 
@@ -53,14 +51,9 @@ class LightningBranch {
   }
 
   generateSubBranches() {
-    // CLIENT REQ: Sub-branches should also have sub-branches (recursive)
     if (this.generation >= this.maxGeneration) return
     if (this.points.length < 5) return
 
-    // Number of sub-branches based on generation
-    // Gen 0 (main): 2-3 branches
-    // Gen 1: 1-2 branches
-    // Gen 2+: 0-1 branches
     const branchCountByGen = [
       Math.floor(Math.random() * 2) + 2, // Gen 0: 2-3
       Math.floor(Math.random() * 2) + 1, // Gen 1: 1-2
@@ -70,29 +63,22 @@ class LightningBranch {
     const branchCount = branchCountByGen[Math.min(this.generation, 2)]
 
     for (let i = 0; i < branchCount; i++) {
-      // Branch spawns at 30-70% along the parent
       const spawnProgress = 0.3 + Math.random() * 0.4
       const pointIndex = Math.floor(this.points.length * spawnProgress)
       const branchPoint = this.points[pointIndex]
       
       if (!branchPoint) continue
 
-      // CLIENT REQ: Main branch becomes thinner as it partitions
-      // At branch point, thickness is already reduced by parent's progressive thinning
       const thicknessAtBranchPoint = branchPoint.width
-      
-      // Sub-branch takes 40-60% of parent thickness at that point
       const subBranchThickness = thicknessAtBranchPoint * (0.4 + Math.random() * 0.2)
 
-      // Branch angle: ±60° spread
-      const angleSpread = Math.PI / 3 // ±60°
+      // OPTIMIZATION: 10% wider angles (±60° → ±66°)
+      const angleSpread = (Math.PI / 3) * 1.1
       const branchAngle = this.angle + (Math.random() - 0.5) * angleSpread
 
-      // Branch length: 30-50% of remaining parent length
       const remainingLength = this.length * (1 - spawnProgress)
       const branchLength = remainingLength * (0.3 + Math.random() * 0.2)
 
-      // Create sub-branch (which will recursively create its own sub-branches)
       this.subBranches.push(new LightningBranch(
         branchPoint.x,
         branchPoint.y,
@@ -112,13 +98,13 @@ class LightningBranch {
     ctx.globalAlpha = opacity
     ctx.strokeStyle = '#ffd700'
     ctx.shadowColor = '#ffd700'
-    ctx.shadowBlur = isMobile ? 10 : 15
+    ctx.shadowBlur = isMobile ? 10 : 15 // NO COMPROMISE on glow
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'
 
     const visiblePoints = Math.ceil(this.points.length * progress)
 
-    // Draw main path with progressive width
+    // Main path
     for (let i = 0; i < visiblePoints - 1; i++) {
       const p1 = this.points[i]
       const p2 = this.points[i + 1]
@@ -131,7 +117,7 @@ class LightningBranch {
       ctx.stroke()
     }
 
-    // Secondary glow
+    // Secondary glow - NO COMPROMISE
     ctx.globalAlpha = opacity * 0.4
     ctx.strokeStyle = '#ffed4e'
     ctx.shadowBlur = 8
@@ -151,7 +137,7 @@ class LightningBranch {
     ctx.restore()
 
     // Draw sub-branches recursively
-    if (progress > 0.3) { // Sub-branches appear after 30% of parent is drawn
+    if (progress > 0.3) {
       const subBranchProgress = Math.max(0, (progress - 0.3) / 0.7)
       for (const subBranch of this.subBranches) {
         subBranch.draw(ctx, subBranchProgress, opacity * 0.9)
@@ -168,7 +154,7 @@ class Lightning {
     this.targetY = targetY
     this.startTime = Date.now()
     
-    // CLIENT REQ: More cinematic lightning (25% chance, was 15%)
+    // Cinematic lightning: 25% chance
     this.isSlow = Math.random() < 0.25
     this.duration = this.isSlow ? 900 : 200
     this.fadeDuration = this.isSlow ? 1400 : 800
@@ -181,12 +167,13 @@ class Lightning {
     this.totalLength = Math.sqrt(dx * dx + dy * dy) * 0.8
     
     const baseAngle = Math.atan2(dx, dy)
-    const angleVariation = (Math.random() - 0.5) * (Math.PI / 9) // ±20°
+    
+    // OPTIMIZATION: 10% more initial angle variation (±20° → ±22°)
+    const angleVariation = (Math.random() - 0.5) * (Math.PI / 9) * 1.1
     this.mainAngle = baseAngle + angleVariation
     
     this.mainThickness = isMobileDevice ? 2.5 : 3.0
     
-    // Create root branch (which will recursively create all sub-branches)
     this.rootBranch = new LightningBranch(
       startX,
       startY,
@@ -194,7 +181,7 @@ class Lightning {
       this.totalLength,
       this.mainThickness,
       0,
-      3 // Max 3 generations of branches
+      3
     )
   }
 
@@ -204,7 +191,6 @@ class Lightning {
     let opacity = 1
 
     if (elapsed < this.duration) {
-      // Drawing phase
       progress = Math.min(elapsed / this.duration, 1)
       
       if (this.isSlow) {
@@ -213,7 +199,6 @@ class Lightning {
       
       opacity = 1
     } else {
-      // Fade phase
       const fadeElapsed = elapsed - this.duration
       const fadeProgress = Math.min(fadeElapsed / this.fadeDuration, 1)
       opacity = 1 - fadeProgress
@@ -222,7 +207,6 @@ class Lightning {
 
     if (opacity <= 0) return
 
-    // Draw entire branch tree recursively
     this.rootBranch.draw(ctx, progress, opacity)
   }
 
@@ -250,14 +234,19 @@ function spawnRandom() {
   const fromX = Math.random() * w
   const fromY = Math.random() * (h * 0.05)
   
-  const toX = fromX + (Math.random() - 0.5) * 200
+  // OPTIMIZATION: 10% more horizontal variance (±200 → ±220)
+  const toX = fromX + (Math.random() - 0.5) * 220
   const toY = fromY + Math.random() * (h * 0.5) + (h * 0.2)
   
   bolts.push(new Lightning(fromX, fromY, toX, toY, isMobile))
 }
 
 function animate() {
-  if (!canvas.value) return
+  if (!canvas.value || isPaused) {
+    frame = requestAnimationFrame(animate)
+    return
+  }
+  
   const w = canvas.value.width
   const h = canvas.value.height
   ctx.clearRect(0, 0, w, h)
@@ -279,6 +268,10 @@ function onButtonLightning({ x, y }) {
   bolts.push(new Lightning(fromX, fromY, x, y, isMobile))
 }
 
+function handleVisibilityChange() {
+  isPaused = document.hidden
+}
+
 let intervalId = null
 
 onMounted(() => {
@@ -288,36 +281,29 @@ onMounted(() => {
   ctx = canvas.value.getContext('2d')
   animate()
   
+  // OPTIMIZATION: 30% less lightning frequency
+  // Desktop: 22% chance every 3000ms (was 30% every 2400ms)
+  // Mobile: 35% chance (was 50%)
   intervalId = setInterval(() => {
-    if (Math.random() > 0.70) { // Slightly reduced frequency
-      if (!isMobile || Math.random() > 0.5) {
+    if (Math.random() > 0.78) { // 22% chance
+      if (!isMobile || Math.random() > 0.65) { // Mobile: 35%
         spawnRandom()
       }
     }
-  }, 2400)
+  }, 3000) // 3000ms (was 2400ms)
   
   window.addEventListener('resize', () => {
     isMobile = window.innerWidth < 768
     resizeCanvas()
   })
   window.addEventListener('strikeLightning', e => onButtonLightning(e.detail))
+  document.addEventListener('visibilitychange', handleVisibilityChange)
 })
 
 onUnmounted(() => {
   cancelAnimationFrame(frame)
   clearInterval(intervalId)
   window.removeEventListener('strikeLightning', e => onButtonLightning(e.detail))
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
 })
 </script>
-
-<style scoped>
-.lightning-canvas {
-  position: fixed;
-  inset: 0;
-  width: 100vw !important;
-  height: 100vh !important;
-  z-index: 10;
-  pointer-events: none;
-  background: none;
-}
-</style>
