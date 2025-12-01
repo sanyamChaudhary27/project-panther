@@ -16,7 +16,7 @@ class FogParticle {
     this.x = Math.random() * w
     this.y = Math.random() * (h * 0.15) // Top 15% of screen
     this.size = Math.random() * 150 + 100
-    this.opacity = Math.random() * 0.15 + 0.05
+    this.opacity = Math.random() * 0.25 + 0.15
     this.vx = (Math.random() - 0.5) * 0.3
     this.baseOpacity = this.opacity
   }
@@ -30,10 +30,10 @@ class FogParticle {
   }
   
   draw(ctx) {
-    const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size)
-    gradient.addColorStop(0, `rgba(40, 40, 45, ${this.opacity})`)
-    gradient.addColorStop(0.5, `rgba(30, 30, 35, ${this.opacity * 0.5})`)
-    gradient.addColorStop(1, 'rgba(20, 20, 25, 0)')
+  const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size)
+  gradient.addColorStop(0, `rgba(60, 50, 20, ${this.opacity})`)
+  gradient.addColorStop(0.5, `rgba(45, 40, 15, ${this.opacity * 0.5})`) 
+  gradient.addColorStop(1, 'rgba(30, 25, 10, 0)')
     
     ctx.fillStyle = gradient
     ctx.fillRect(this.x - this.size, this.y - this.size, this.size * 2, this.size * 2)
@@ -328,7 +328,7 @@ function resizeCanvas() {
   
   // Regenerate fog
   fogParticles = []
-  const fogCount = isMobile ? 20 : 35
+  const fogCount = isMobile ? 30 : 50
   for (let i = 0; i < fogCount; i++) {
     fogParticles.push(new FogParticle(canvas.value.width, canvas.value.height))
   }
