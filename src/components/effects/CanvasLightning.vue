@@ -1,16 +1,56 @@
 <template>
   <canvas ref="canvas" class="lightning-canvas"></canvas>
 </template>
+
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 
 const canvas = ref(null)
-let ctx, bolts = []
+let ctx, bolts = [], fogParticles = []
 let isMobile = false
 let isPaused = false
 
+// Fog particle for cloud layer
+class FogParticle {
+  constructor(w, h) {
+    this.x = Math.random() * w
+    this.y = Math.random() * (h * 0.15) // Top 15% of screen
+    this.size = Math.random() * 150 + 100
+    this.opacity = Math.random() * 0.15 + 0.05
+    this.vx = (Math.random() - 0.5) * 0.3
+    this.baseOpacity = this.opacity
+  }
+  
+  update(w, h) {
+    this.x += this.vx
+    
+    // Wrap around
+    if (this.x < -this.size) this.x = w + this.size
+    if (this.x > w + this.size) this.x = -this.size
+  }
+  
+  draw(ctx) {
+    const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size)
+    gradient.addColorStop(0, `rgba(40, 40, 45, ${this.opacity})`)
+    gradient.addColorStop(0.5, `rgba(30, 30, 35, ${this.opacity * 0.5})`)
+    gradient.addColorStop(1, 'rgba(20, 20, 25, 0)')
+    
+    ctx.fillStyle = gradient
+    ctx.fillRect(this.x - this.size, this.y - this.size, this.size * 2, this.size * 2)
+  }
+  
+  flash() {
+    // Flash fog when lightning strikes
+    this.opacity = Math.min(this.baseOpacity * 3, 0.4)
+    setTimeout(() => {
+      this.opacity = this.baseOpacity
+    }, 150)
+  }
+}
+
+// Realistic physics-based lightning branch
 class LightningBranch {
-  constructor(startX, startY, angle, length, thickness, generation = 0, maxGeneration = 3) {
+  constructor(startX, startY, angle, length, thickness, generation = 0, maxGeneration = 3, angleHistory = []) {
     this.startX = startX
     this.startY = startY
     this.angle = angle
@@ -18,34 +58,49 @@ class LightningBranch {
     this.thickness = thickness
     this.generation = generation
     this.maxGeneration = maxGeneration
+    this.angleHistory = [...angleHistory] // Track angle changes for realistic physics
     this.points = []
     this.subBranches = []
-    this.generatePath()
+    this.generateRealisticPath()
     this.generateSubBranches()
   }
 
-  generatePath() {
-    const segments = Math.max(10, Math.floor(this.length / 20))
+  generateRealisticPath() {
+    const segments = Math.max(12, Math.floor(this.length / 18))
     let currentAngle = this.angle
+    let momentum = 0 // Angle momentum for realistic physics
 
     this.points.push({ x: this.startX, y: this.startY, width: this.thickness })
 
     for (let i = 1; i <= segments; i++) {
       const progress = i / segments
       
-      // OPTIMIZATION: 10% MORE CHAOS (0.2 → 0.22)
-      const turbulence = (1 - progress) * 0.22
-      const angleDeviation = (Math.random() - 0.5) * turbulence
-      currentAngle += angleDeviation
+      // REALISTIC PHYSICS: If angle changes by 15°, it compensates by ~5° in opposite direction
+      const desiredAngleChange = (Math.random() - 0.5) * 0.3 // Random deviation
+      
+      // Apply momentum (creates the "zigzag" realistic effect)
+      momentum += desiredAngleChange
+      
+      // Damping: reduce momentum over time (creates compensation)
+      momentum *= 0.85
+      
+      // Apply angle change with momentum
+      currentAngle += momentum
+      
+      // Store angle history
+      this.angleHistory.push(currentAngle)
+      
+      // Keep recent history only (last 3 angles)
+      if (this.angleHistory.length > 3) this.angleHistory.shift()
 
-      // OPTIMIZATION: More segment variance (0.85+0.3 → 0.8+0.4)
-      const segmentLength = (this.length / segments) * (0.8 + Math.random() * 0.4)
+      // Segment length with variance
+      const segmentLength = (this.length / segments) * (0.85 + Math.random() * 0.3)
       
       const prevPoint = this.points[i - 1]
       const nextX = prevPoint.x + Math.sin(currentAngle) * segmentLength
       const nextY = prevPoint.y + Math.cos(currentAngle) * segmentLength
 
-      // Progressive thinning - NO COMPROMISE
+      // Progressive thinning
       const thicknessReduction = 1 - (progress * 0.7)
       const width = this.thickness * thicknessReduction
 
@@ -75,12 +130,11 @@ class LightningBranch {
       const thicknessAtBranchPoint = branchPoint.width
       const subBranchThickness = thicknessAtBranchPoint * (0.4 + Math.random() * 0.2)
 
-      // OPTIMIZATION: 10% wider angles (±60° → ±66°)
-      const angleSpread = (Math.PI / 3) * 1.1
+      const angleSpread = (Math.PI / 3) * 1.2
       const branchAngle = this.angle + (Math.random() - 0.5) * angleSpread
 
       const remainingLength = this.length * (1 - spawnProgress)
-      const branchLength = remainingLength * (0.3 + Math.random() * 0.2)
+      const branchLength = remainingLength * (0.35 + Math.random() * 0.25)
 
       this.subBranches.push(new LightningBranch(
         branchPoint.x,
@@ -89,7 +143,8 @@ class LightningBranch {
         branchLength,
         subBranchThickness,
         this.generation + 1,
-        this.maxGeneration
+        this.maxGeneration,
+        this.angleHistory // Pass angle history for physics continuity
       ))
     }
   }
@@ -101,13 +156,13 @@ class LightningBranch {
     ctx.globalAlpha = opacity
     ctx.strokeStyle = '#ffd700'
     ctx.shadowColor = '#ffd700'
-    ctx.shadowBlur = isMobile ? 10 : 15 // NO COMPROMISE on glow
+    ctx.shadowBlur = isMobile ? 12 : 18
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'
 
     const visiblePoints = Math.ceil(this.points.length * progress)
 
-    // Main path
+    // Main bolt
     for (let i = 0; i < visiblePoints - 1; i++) {
       const p1 = this.points[i]
       const p2 = this.points[i + 1]
@@ -120,16 +175,16 @@ class LightningBranch {
       ctx.stroke()
     }
 
-    // Secondary glow - NO COMPROMISE
-    ctx.globalAlpha = opacity * 0.4
-    ctx.strokeStyle = '#ffed4e'
-    ctx.shadowBlur = 8
+    // Inner glow
+    ctx.globalAlpha = opacity * 0.5
+    ctx.strokeStyle = '#fff'
+    ctx.shadowBlur = 4
     
     for (let i = 0; i < visiblePoints - 1; i++) {
       const p1 = this.points[i]
       const p2 = this.points[i + 1]
       
-      ctx.lineWidth = p1.width * 0.5
+      ctx.lineWidth = p1.width * 0.3
       
       ctx.beginPath()
       ctx.moveTo(p1.x, p1.y)
@@ -139,52 +194,42 @@ class LightningBranch {
 
     ctx.restore()
 
-    // Draw sub-branches recursively
+    // Sub-branches
     if (progress > 0.3) {
       const subBranchProgress = Math.max(0, (progress - 0.3) / 0.7)
       for (const subBranch of this.subBranches) {
-        subBranch.draw(ctx, subBranchProgress, opacity * 0.9)
+        subBranch.draw(ctx, subBranchProgress, opacity * 0.88)
       }
     }
   }
 }
 
-class Lightning {
+// FULL lightning (ground strike)
+class FullLightning {
   constructor(startX, startY, targetX, targetY, isMobileDevice = false) {
     this.startX = startX
     this.startY = startY
     this.targetX = targetX
     this.targetY = targetY
     this.startTime = Date.now()
-    
-    // Cinematic lightning: 25% chance
-    this.isSlow = Math.random() < 0.25
-    this.duration = this.isSlow ? 900 : 200
-    this.fadeDuration = this.isSlow ? 1400 : 800
-    
+    this.duration = 150
+    this.fadeDuration = 800
     this.opacity = 1
     this.isMobile = isMobileDevice
+    this.type = 'full'
     
     const dx = targetX - startX
     const dy = targetY - startY
-    this.totalLength = Math.sqrt(dx * dx + dy * dy) * 0.8
+    this.totalLength = Math.sqrt(dx * dx + dy * dy) * 0.85
     
     const baseAngle = Math.atan2(dx, dy)
-    
-    // OPTIMIZATION: 10% more initial angle variation (±20° → ±22°)
-    const angleVariation = (Math.random() - 0.5) * (Math.PI / 9) * 1.1
+    const angleVariation = (Math.random() - 0.5) * (Math.PI / 12)
     this.mainAngle = baseAngle + angleVariation
     
-    this.mainThickness = isMobileDevice ? 2.5 : 3.0
+    this.mainThickness = isMobileDevice ? 3.0 : 3.5
     
     this.rootBranch = new LightningBranch(
-      startX,
-      startY,
-      this.mainAngle,
-      this.totalLength,
-      this.mainThickness,
-      0,
-      3
+      startX, startY, this.mainAngle, this.totalLength, this.mainThickness, 0, 3
     )
   }
 
@@ -195,11 +240,6 @@ class Lightning {
 
     if (elapsed < this.duration) {
       progress = Math.min(elapsed / this.duration, 1)
-      
-      if (this.isSlow) {
-        progress = this.easeOutCubic(progress)
-      }
-      
       opacity = 1
     } else {
       const fadeElapsed = elapsed - this.duration
@@ -209,12 +249,71 @@ class Lightning {
     }
 
     if (opacity <= 0) return
-
     this.rootBranch.draw(ctx, progress, opacity)
   }
 
-  easeOutCubic(t) {
-    return 1 - Math.pow(1 - t, 3)
+  get finished() {
+    return Date.now() - this.startTime > this.duration + this.fadeDuration
+  }
+}
+
+// CLOUD lightning (horizontal flash in fog)
+class CloudLightning {
+  constructor(w, h) {
+    this.startTime = Date.now()
+    this.duration = 100
+    this.fadeDuration = 400
+    this.type = 'cloud'
+    
+    // Horizontal lightning in top 20% of screen
+    this.startX = Math.random() * w
+    this.startY = Math.random() * (h * 0.12) + 20
+    
+    const horizontalLength = w * (0.2 + Math.random() * 0.3)
+    const direction = Math.random() > 0.5 ? 1 : -1
+    this.endX = this.startX + (horizontalLength * direction)
+    this.endY = this.startY + (Math.random() - 0.5) * 40
+    
+    this.opacity = 0.7 + Math.random() * 0.3
+    this.thickness = 1.5 + Math.random()
+  }
+
+  draw(ctx) {
+    const elapsed = Date.now() - this.startTime
+    let opacity = this.opacity
+
+    if (elapsed < this.duration) {
+      opacity = this.opacity
+    } else {
+      const fadeElapsed = elapsed - this.duration
+      const fadeProgress = Math.min(fadeElapsed / this.fadeDuration, 1)
+      opacity = this.opacity * (1 - fadeProgress)
+    }
+
+    if (opacity <= 0) return
+
+    ctx.save()
+    ctx.globalAlpha = opacity
+    ctx.strokeStyle = '#ffd700'
+    ctx.shadowColor = '#ffd700'
+    ctx.shadowBlur = 25
+    ctx.lineWidth = this.thickness
+    ctx.lineCap = 'round'
+
+    // Jagged horizontal line
+    const segments = 8
+    ctx.beginPath()
+    ctx.moveTo(this.startX, this.startY)
+    
+    for (let i = 1; i <= segments; i++) {
+      const t = i / segments
+      const x = this.startX + (this.endX - this.startX) * t
+      const y = this.startY + (this.endY - this.startY) * t + (Math.random() - 0.5) * 15
+      ctx.lineTo(x, y)
+    }
+    
+    ctx.stroke()
+    ctx.restore()
   }
 
   get finished() {
@@ -226,22 +325,43 @@ function resizeCanvas() {
   if (!canvas.value) return
   canvas.value.width = window.innerWidth
   canvas.value.height = window.innerHeight
+  
+  // Regenerate fog
+  fogParticles = []
+  const fogCount = isMobile ? 20 : 35
+  for (let i = 0; i < fogCount; i++) {
+    fogParticles.push(new FogParticle(canvas.value.width, canvas.value.height))
+  }
 }
 
 let frame
 
-function spawnRandom() {
+function spawnFullLightning(targetX = null, targetY = null) {
   const w = canvas.value.width
   const h = canvas.value.height
   
   const fromX = Math.random() * w
-  const fromY = Math.random() * (h * 0.05)
+  const fromY = Math.random() * (h * 0.12)
   
-  // OPTIMIZATION: 10% more horizontal variance (±200 → ±220)
-  const toX = fromX + (Math.random() - 0.5) * 220
-  const toY = fromY + Math.random() * (h * 0.5) + (h * 0.2)
+  const toX = targetX || (fromX + (Math.random() - 0.5) * 300)
+  const toY = targetY || (fromY + h * (0.5 + Math.random() * 0.3))
   
-  bolts.push(new Lightning(fromX, fromY, toX, toY, isMobile))
+  bolts.push(new FullLightning(fromX, fromY, toX, toY, isMobile))
+  
+  // Flash fog
+  fogParticles.forEach(f => f.flash())
+}
+
+function spawnCloudLightning() {
+  const w = canvas.value.width
+  const h = canvas.value.height
+  bolts.push(new CloudLightning(w, h))
+  
+  // Subtle fog flash
+  fogParticles.slice(0, 5).forEach(f => {
+    f.opacity = Math.min(f.opacity * 1.5, 0.25)
+    setTimeout(() => f.opacity = f.baseOpacity, 100)
+  })
 }
 
 function animate() {
@@ -254,28 +374,29 @@ function animate() {
   const h = canvas.value.height
   ctx.clearRect(0, 0, w, h)
   
-  bolts = bolts.filter(b => !b.finished)
+  // Draw fog layer
+  for (const fog of fogParticles) {
+    fog.update(w, h)
+    fog.draw(ctx)
+  }
   
+  // Draw lightning
+  bolts = bolts.filter(b => !b.finished)
   for (const b of bolts) b.draw(ctx)
   
   frame = requestAnimationFrame(animate)
 }
 
 function onButtonLightning({ x, y }) {
-  const w = canvas.value.width
-  const h = canvas.value.height
-  
-  const fromX = Math.random() * w
-  const fromY = Math.random() * (h * 0.05)
-  
-  bolts.push(new Lightning(fromX, fromY, x, y, isMobile))
+  spawnFullLightning(x, y)
 }
 
 function handleVisibilityChange() {
   isPaused = document.hidden
 }
 
-let intervalId = null
+let fullLightningInterval = null
+let cloudLightningInterval = null
 
 onMounted(() => {
   isMobile = window.innerWidth < 768
@@ -284,29 +405,31 @@ onMounted(() => {
   ctx = canvas.value.getContext('2d')
   animate()
   
-  // OPTIMIZATION: 30% less lightning frequency
-  // Desktop: 22% chance every 3000ms (was 30% every 2400ms)
-  // Mobile: 35% chance (was 50%)
-  intervalId = setInterval(() => {
-    if (Math.random() > 0.78) { // 22% chance
-      if (!isMobile || Math.random() > 0.65) { // Mobile: 35%
-        spawnRandom()
-      }
+  // FULL LIGHTNING: 2-3 per minute (every 20-30 seconds)
+  fullLightningInterval = setInterval(() => {
+    if (Math.random() > 0.5) { // 50% chance = ~1.5 strikes per check
+      spawnFullLightning()
     }
-  }, 3000) // 3000ms (was 2400ms)
+  }, 25000) // Every 25 seconds
+  
+  // CLOUD LIGHTNING: 4-6 per minute (every 10-15 seconds)
+  cloudLightningInterval = setInterval(() => {
+    spawnCloudLightning()
+  }, 12000) // Every 12 seconds
   
   window.addEventListener('resize', () => {
     isMobile = window.innerWidth < 768
     resizeCanvas()
   })
-  window.addEventListener('strikeLightning', e => onButtonLightning(e.detail))
+  window.addEventListener('strikeLightning', onButtonLightning)
   document.addEventListener('visibilitychange', handleVisibilityChange)
 })
 
 onUnmounted(() => {
   cancelAnimationFrame(frame)
-  clearInterval(intervalId)
-  window.removeEventListener('strikeLightning', e => onButtonLightning(e.detail))
+  clearInterval(fullLightningInterval)
+  clearInterval(cloudLightningInterval)
+  window.removeEventListener('strikeLightning', onButtonLightning)
   document.removeEventListener('visibilitychange', handleVisibilityChange)
 })
 </script>
